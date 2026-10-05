@@ -5,8 +5,10 @@ TypeScript и Tailwind CSS.
 
 ## Запуск в режиме разработки
 
+Из корня репозитория выполните:
+
 ```bash
-cd resolve-panel/frontend
+cd frontend
 npm install
 npm run dev
 ```

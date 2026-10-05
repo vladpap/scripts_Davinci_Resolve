@@ -133,7 +133,6 @@ params:
 файла перезапустите серверную часть:
 
 ```bash
-cd resolve-panel
 uvicorn backend.main:app --host 127.0.0.1 --port 8765
 ```
 
@@ -228,7 +227,7 @@ function ExampleCard() {
 5. Запустите проверку:
 
    ```bash
-   cd resolve-panel/frontend
+   cd frontend
    npm run build && npm run lint
    ```
 

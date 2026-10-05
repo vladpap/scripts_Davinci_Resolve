@@ -37,8 +37,9 @@ backend и frontend. Для остановки панели нажмите `Ctrl
 
 ## Запуск серверной части
 
+Выполняйте команды из корня клонированного репозитория:
+
 ```bash
-cd resolve-panel
 python3.11 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements.txt
@@ -50,8 +51,10 @@ uvicorn backend.main:app --host 127.0.0.1 --port 8765
 
 ## Разработка интерфейса
 
+Из корня репозитория перейдите в каталог интерфейса:
+
 ```bash
-cd resolve-panel/frontend
+cd frontend
 npm install
 npm run dev
 ```
