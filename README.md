@@ -1,6 +1,6 @@
 # Панель управления DaVinci Resolve
 
-[![Лицензия: MIT](https://img.shields.io/badge/Лицензия-MIT-yellow.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![Python 3.11](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
@@ -207,3 +207,9 @@ frontend/
   src/components/ui/ # локальная основа компонентов shadcn/ui
   src/lib/           # общие утилиты интерфейса
 ```
+
+## Лицензия
+
+Проект распространяется по лицензии [MIT](LICENSE). Разрешены использование,
+изменение и распространение при сохранении уведомления об авторских правах и
+текста лицензии.
