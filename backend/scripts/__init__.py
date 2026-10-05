@@ -1,1 +1,1 @@
-"""User-provided scripts discovered by the local control panel."""
+"""Пользовательские скрипты, обнаруживаемые локальной панелью управления."""

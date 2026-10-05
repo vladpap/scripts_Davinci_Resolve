@@ -1,32 +1,42 @@
-# React + TypeScript + Vite
+# Интерфейс панели DaVinci Resolve
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React-интерфейс панели управления DaVinci Resolve, собранный с Vite,
+TypeScript и Tailwind CSS.
 
-Currently, two official plugins are available:
+## Запуск в режиме разработки
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+cd resolve-panel/frontend
+npm install
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Vite выведет локальный адрес интерфейса. Запросы к `/api` автоматически
+проксируются на серверную часть по адресу `http://127.0.0.1:8765`, поэтому её
+нужно запустить отдельно.
+
+## Проверка и итоговая сборка
+
+```bash
+npm run build
+npm run lint
+```
+
+`npm run build` выполняет проверку TypeScript и создаёт итоговую сборку в
+каталоге `dist/`. `npm run lint` запускает Oxlint.
+
+## Структура исходного кода
+
+```text
+src/
+  App.tsx              # основной экран, загрузка данных панели и навигация
+  components/          # компоненты интерфейса и формы скриптов
+  components/ui/       # базовые локальные компоненты интерфейса
+  lib/api.ts           # запросы к серверному API
+  lib/scripts.ts       # TypeScript-типы API скриптов и Resolve
+  lib/toast.ts         # уведомления
+```
+
+Для новых компонентов используйте существующие `Button`, `Card`, общие токены
+темы и классы Tailwind. Дополнительные рекомендации находятся в
+[`../backend/scripts/README.md`](../backend/scripts/README.md).

@@ -24,7 +24,7 @@ function Sidebar({ scripts, selectedScriptId, onSelectScript, health, isLoading,
             <TerminalSquare className="size-4" />
           </span>
           <div>
-            <p className="text-sm font-semibold leading-none">Resolve Panel</p>
+            <p className="text-sm font-semibold leading-none">Панель Resolve</p>
             <p className="mt-1 text-[11px] text-muted-foreground">Локальная панель</p>
           </div>
         </div>
@@ -37,7 +37,7 @@ function Sidebar({ scripts, selectedScriptId, onSelectScript, health, isLoading,
         <ScriptList isLoading={isLoading} scripts={scripts} selectedScriptId={selectedScriptId} onSelect={onSelectScript} />
         <Button className="mt-3 w-full justify-start" size="sm" variant={isShowcaseOpen ? 'outline' : 'ghost'} onClick={onShowcaseOpen}>
           <LayoutPanelTop className="size-3.5" />
-          Примеры UI
+          Примеры интерфейса
         </Button>
       </div>
 

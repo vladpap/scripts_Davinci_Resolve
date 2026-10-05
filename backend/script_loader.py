@@ -1,4 +1,4 @@
-"""Discovery and validation for user-provided DaVinci Resolve scripts."""
+"""Обнаружение и проверка пользовательских скриптов DaVinci Resolve."""
 
 from __future__ import annotations
 
@@ -20,16 +20,16 @@ PARAMETER_NAME_PATTERN = re.compile(r"^[A-Za-z][A-Za-z0-9_]*$")
 
 
 class ScriptManifestError(ValueError):
-    """Raised when a script does not contain a valid panel manifest."""
+    """Возникает, когда скрипт не содержит корректный манифест панели."""
 
 
 class ScriptNotFoundError(KeyError):
-    """Raised when a requested script identifier is not registered."""
+    """Возникает, когда запрошенный идентификатор скрипта не зарегистрирован."""
 
 
 @dataclass(frozen=True)
 class ScriptParameter:
-    """A single user-configurable value declared in a script manifest."""
+    """Отдельное настраиваемое пользователем значение из манифеста скрипта."""
 
     name: str
     type: str
@@ -49,7 +49,7 @@ class ScriptParameter:
 
 @dataclass(frozen=True)
 class ScriptDefinition:
-    """The safe metadata required to present a script in the control panel."""
+    """Безопасные метаданные, необходимые для отображения скрипта в панели управления."""
 
     id: str
     name: str
@@ -67,14 +67,14 @@ class ScriptDefinition:
 
 
 class ScriptRegistry:
-    """Registry populated by scanning the configured scripts directory at startup."""
+    """Реестр, заполняемый при запуске сканированием каталога скриптов."""
 
     def __init__(self, scripts_directory: Path = SCRIPTS_DIRECTORY) -> None:
         self._scripts_directory = scripts_directory
         self._scripts: Dict[str, ScriptDefinition] = {}
 
     def load(self) -> None:
-        """Discover scripts without importing or executing user-provided modules."""
+        """Найти скрипты, не импортируя и не выполняя пользовательские модули."""
         self._scripts = {}
         self._scripts_directory.mkdir(parents=True, exist_ok=True)
 
@@ -85,20 +85,20 @@ class ScriptRegistry:
             try:
                 script = self._load_script(path)
             except (OSError, SyntaxError, ScriptManifestError) as error:
-                logger.warning("Skipped script %s: %s", path.name, error)
+                logger.warning("Пропущен скрипт %s: %s", path.name, error)
                 continue
 
             if script.id in self._scripts:
-                logger.warning("Skipped script %s: duplicate id %r", path.name, script.id)
+                logger.warning("Пропущен скрипт %s: повторяющийся идентификатор %r", path.name, script.id)
                 continue
             self._scripts[script.id] = script
 
     def list_scripts(self) -> List[ScriptDefinition]:
-        """Return registered scripts ordered by their display name."""
+        """Вернуть зарегистрированные скрипты, отсортированные по отображаемому имени."""
         return sorted(self._scripts.values(), key=lambda script: script.name.casefold())
 
     def get_script(self, script_id: str) -> ScriptDefinition:
-        """Return one script or raise a domain-specific not-found error."""
+        """Вернуть скрипт или вызвать специализированную ошибку отсутствия."""
         try:
             return self._scripts[script_id]
         except KeyError as error:
@@ -109,23 +109,22 @@ class ScriptRegistry:
         script_id = path.stem
         if not SCRIPT_ID_PATTERN.fullmatch(script_id):
             raise ScriptManifestError(
-                "filename must use lowercase letters, digits, and underscores "
-                "and start with a letter"
+                "имя файла должно начинаться с буквы и содержать только строчные латинские буквы, цифры и подчёркивания"
             )
 
         source = path.read_text(encoding="utf-8")
         module = ast.parse(source, filename=str(path))
         docstring = ast.get_docstring(module, clean=True)
         if docstring is None:
-            raise ScriptManifestError("missing YAML manifest in module docstring")
+            raise ScriptManifestError("в docstring модуля отсутствует YAML-манифест")
 
         try:
             manifest = yaml.safe_load(docstring)
         except yaml.YAMLError as error:
-            raise ScriptManifestError("manifest is not valid YAML") from error
+            raise ScriptManifestError("манифест содержит некорректный YAML") from error
 
         if not isinstance(manifest, Mapping):
-            raise ScriptManifestError("manifest must be a YAML mapping")
+            raise ScriptManifestError("манифест должен быть YAML-словарём")
 
         return ScriptDefinition(
             id=script_id,
@@ -139,51 +138,51 @@ class ScriptRegistry:
 def _required_string(manifest: Mapping[str, Any], field_name: str) -> str:
     value = manifest.get(field_name)
     if not isinstance(value, str) or not value.strip():
-        raise ScriptManifestError("%r must be a non-empty string" % field_name)
+        raise ScriptManifestError("%r должно быть непустой строкой" % field_name)
     return value.strip()
 
 
 def _optional_string(manifest: Mapping[str, Any], field_name: str) -> str:
     value = manifest.get(field_name, "")
     if not isinstance(value, str):
-        raise ScriptManifestError("%r must be a string" % field_name)
+        raise ScriptManifestError("%r должно быть строкой" % field_name)
     return value.strip()
 
 
 def _parse_parameters(raw_parameters: Any) -> List[ScriptParameter]:
     if not isinstance(raw_parameters, Sequence) or isinstance(raw_parameters, (str, bytes)):
-        raise ScriptManifestError("'params' must be a YAML list")
+        raise ScriptManifestError("'params' должно быть YAML-списком")
 
     names = set()
     parameters = []
     for index, raw_parameter in enumerate(raw_parameters, start=1):
         if not isinstance(raw_parameter, Mapping):
-            raise ScriptManifestError("parameter #%d must be a mapping" % index)
+            raise ScriptManifestError("параметр №%d должен быть словарём" % index)
 
         name = _required_string(raw_parameter, "name")
         if not PARAMETER_NAME_PATTERN.fullmatch(name):
-            raise ScriptManifestError("parameter %r has an invalid name" % name)
+            raise ScriptManifestError("параметр %r имеет недопустимое имя" % name)
         if name in names:
-            raise ScriptManifestError("parameter %r is declared more than once" % name)
+            raise ScriptManifestError("параметр %r объявлен более одного раза" % name)
         names.add(name)
 
         parameter_type = _required_string(raw_parameter, "type")
         if parameter_type not in SUPPORTED_PARAM_TYPES:
-            raise ScriptManifestError("parameter %r has unsupported type %r" % (name, parameter_type))
+            raise ScriptManifestError("параметр %r имеет неподдерживаемый тип %r" % (name, parameter_type))
 
         default = raw_parameter.get("default", _default_for(parameter_type))
-        _validate_value(default, "default for parameter %r" % name)
+        _validate_value(default, "значение по умолчанию для параметра %r" % name)
 
         options = raw_parameter.get("options")
         if parameter_type == "select":
             if not isinstance(options, list) or not options:
-                raise ScriptManifestError("select parameter %r requires non-empty 'options'" % name)
+                raise ScriptManifestError("для параметра select %r необходим непустой список 'options'" % name)
             for option in options:
-                _validate_value(option, "option for parameter %r" % name)
+                _validate_value(option, "вариант параметра %r" % name)
             if default not in options:
-                raise ScriptManifestError("default for select parameter %r must be an option" % name)
+                raise ScriptManifestError("значение по умолчанию параметра select %r должно быть вариантом из списка" % name)
         elif options is not None:
-            raise ScriptManifestError("only select parameters may define 'options'")
+            raise ScriptManifestError("поле 'options' может быть только у параметров select")
 
         parameters.append(
             ScriptParameter(
@@ -206,4 +205,4 @@ def _default_for(parameter_type: str) -> Any:
 
 def _validate_value(value: Any, context: str) -> None:
     if not isinstance(value, (str, int, float, bool)) and value is not None:
-        raise ScriptManifestError("%s must be a JSON scalar" % context)
+        raise ScriptManifestError("%s должно быть скалярным значением JSON" % context)

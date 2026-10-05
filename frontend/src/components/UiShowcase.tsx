@@ -7,7 +7,7 @@ import { useToast } from '@/lib/toast'
 
 function UiShowcase() {
   const [isEnabled, setIsEnabled] = useState(true)
-  const [environment, setEnvironment] = useState('Production')
+  const [environment, setEnvironment] = useState('Рабочее')
   const [notes, setNotes] = useState('Экспортировать маркеры в JSON после проверки таймлайна.')
   const [progress, setProgress] = useState(64)
   const { toast } = useToast()
@@ -20,7 +20,7 @@ function UiShowcase() {
             <SlidersHorizontal className="size-4.5" />
           </span>
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">UI helper</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">Элементы интерфейса</p>
             <h1 className="mt-1 text-xl font-semibold tracking-tight">Примеры элементов интерфейса</h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
               Интерактивная витрина базовых элементов веб-панели. Здесь можно сверить состояния и поведение перед использованием в новых экранах.
@@ -30,17 +30,17 @@ function UiShowcase() {
       </header>
 
       <div className="mx-auto grid max-w-6xl gap-5 p-4 sm:p-8 lg:grid-cols-2">
-        <ShowcaseCard description="Основные действия и варианты состояний." title="Button">
+        <ShowcaseCard description="Основные действия и варианты состояний." title="Кнопки">
           <div className="flex flex-wrap items-center gap-3">
             <Button onClick={() => toast({ title: 'Действие выполнено', description: 'Пример основной кнопки.', variant: 'success' })}><Plus className="size-4" />Создать</Button>
             <Button variant="outline"><Copy className="size-4" />Копировать</Button>
             <Button variant="ghost"><FileText className="size-4" />Подробнее</Button>
             <Button disabled><LoaderCircle className="size-4 animate-spin" />Загрузка</Button>
-            <Button aria-label="Поиск" size="icon" variant="outline"><Search className="size-4" /></Button>
+            <Button aria-label="Поиск" size="icon" variant="outline" onClick={() => toast({ title: 'Поиск выполнен', description: 'Пример основной кнопки.', variant: 'success' })}><Search className="size-4" /></Button>
           </div>
         </ShowcaseCard>
 
-        <ShowcaseCard description="Статусы, подсказки и индикаторы процесса." title="Status">
+        <ShowcaseCard description="Статусы, подсказки и индикаторы процесса." title="Статусы">
           <div className="flex flex-wrap items-center gap-2">
             <StatusBadge color="bg-emerald-400" label="Готово" tone="border-emerald-500/30 bg-emerald-500/15 text-emerald-400" />
             <StatusBadge color="bg-amber-400" label="В очереди" tone="border-amber-500/30 bg-amber-500/15 text-amber-400" />
@@ -55,7 +55,7 @@ function UiShowcase() {
           </div>
         </ShowcaseCard>
 
-        <ShowcaseCard description="Поля для настройки скрипта и ввода данных." title="Input, Select & Textarea">
+        <ShowcaseCard description="Поля для настройки скрипта и ввода данных." title="Поля ввода">
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Название задачи">
               <input className={inputClassName} defaultValue="Экспорт таймлайна" placeholder="Введите название" />
@@ -63,9 +63,9 @@ function UiShowcase() {
             <Field label="Окружение">
               <div className="relative">
                 <select className={inputClassName} value={environment} onChange={(event) => setEnvironment(event.target.value)}>
-                  <option>Production</option>
-                  <option>Staging</option>
-                  <option>Development</option>
+                  <option>Рабочее</option>
+                  <option>Тестовое</option>
+                  <option>Разработка</option>
                 </select>
                 <ChevronDown className="pointer-events-none absolute right-3 top-2.5 size-4 text-muted-foreground" />
               </div>
@@ -76,7 +76,7 @@ function UiShowcase() {
           </div>
         </ShowcaseCard>
 
-        <ShowcaseCard description="Переключатели для включения параметров и выбора вариантов." title="Checkbox & Radio">
+        <ShowcaseCard description="Переключатели для включения параметров и выбора вариантов." title="Флажки и переключатели">
           <label className="flex cursor-pointer items-center justify-between rounded-md border border-border bg-muted/20 px-3 py-3">
             <span><span className="block text-sm font-medium">Добавить маркеры</span><span className="mt-0.5 block text-xs text-muted-foreground">Создавать маркеры в текущем таймлайне</span></span>
             <input checked={isEnabled} className="size-4 accent-[var(--primary)]" type="checkbox" onChange={(event) => setIsEnabled(event.target.checked)} />
@@ -93,7 +93,7 @@ function UiShowcase() {
           </fieldset>
         </ShowcaseCard>
 
-        <ShowcaseCard description="Типичные сообщения и список операций." title="Feedback & List">
+        <ShowcaseCard description="Типичные сообщения и список операций." title="Сообщения и списки">
           <div className="flex gap-3 rounded-md border border-primary/25 bg-primary/10 p-3 text-sm">
             <Info className="mt-0.5 size-4 shrink-0 text-primary" />
             <p className="leading-5 text-muted-foreground">Подсказка: параметры сохраняются только на время текущей сессии.</p>
@@ -109,7 +109,7 @@ function UiShowcase() {
           </ul>
         </ShowcaseCard>
 
-        <ShowcaseCard description="Пустое состояние и деструктивное действие." title="Empty state">
+        <ShowcaseCard description="Пустое состояние и необратимое действие." title="Пустое состояние">
           <div className="grid place-items-center rounded-md border border-dashed border-border bg-muted/15 px-4 py-6 text-center">
             <span className="flex size-9 items-center justify-center rounded-md bg-muted text-muted-foreground"><TerminalSquare className="size-4" /></span>
             <p className="mt-3 text-sm font-medium">Данные пока отсутствуют</p>

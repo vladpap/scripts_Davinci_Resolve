@@ -1,4 +1,4 @@
-"""Validated background execution, lifecycle state, and logs for Resolve scripts."""
+"""Проверенное фоновое выполнение, состояния и логи скриптов Resolve."""
 
 from __future__ import annotations
 
@@ -6,6 +6,7 @@ import contextlib
 import importlib.util
 import logging
 import queue
+import sys
 import traceback
 from collections import deque
 from concurrent.futures import Future, ThreadPoolExecutor
@@ -25,20 +26,20 @@ TERMINAL_STATUSES = frozenset({"cancelled", "error", "success"})
 
 
 class RunNotFoundError(KeyError):
-    """Raised when a run identifier is unknown."""
+    """Возникает, когда идентификатор запуска неизвестен."""
 
 
 class RunCannotBeStoppedError(RuntimeError):
-    """Raised when a running synchronous script cannot be interrupted safely."""
+    """Возникает, когда выполняющийся синхронный скрипт нельзя безопасно прервать."""
 
 
 class RunAlreadyActiveError(RuntimeError):
-    """Raised when another script is queued or running."""
+    """Возникает, когда другой скрипт ожидает запуска или выполняется."""
 
 
 @dataclass(frozen=True)
 class ScriptRun:
-    """The public data returned when a script has been queued."""
+    """Публичные данные, возвращаемые после постановки скрипта в очередь."""
 
     id: str
     status: str
@@ -46,7 +47,7 @@ class ScriptRun:
 
 @dataclass
 class _RunRecord:
-    """Mutable internal state for an accepted script execution."""
+    """Изменяемое внутреннее состояние принятого запуска скрипта."""
 
     id: str
     status: str = "queued"
@@ -56,7 +57,7 @@ class _RunRecord:
 
 
 class ScriptRunner:
-    """Run at most one Resolve script at a time and make its lifecycle observable."""
+    """Выполнять не более одного скрипта Resolve и предоставлять его состояние."""
 
     def __init__(self, resolve_bridge: ResolveBridge) -> None:
         self._resolve_bridge = resolve_bridge
@@ -65,11 +66,11 @@ class ScriptRunner:
         self._lock = RLock()
 
     def submit(self, script: ScriptDefinition, raw_params: Mapping[str, Any]) -> ScriptRun:
-        """Accept a script only when no other script is queued or running."""
+        """Принять скрипт, только если другой не ожидает запуска и не выполняется."""
         params = validate_params(script, raw_params)
         with self._lock:
             if any(record.status not in TERMINAL_STATUSES for record in self._runs.values()):
-                raise RunAlreadyActiveError("A script is already running. Wait for it to finish before starting another one.")
+                raise RunAlreadyActiveError("Другой скрипт уже выполняется. Дождитесь его завершения перед новым запуском.")
 
             run_id = uuid4().hex
             record = _RunRecord(id=run_id)
@@ -82,7 +83,7 @@ class ScriptRunner:
         return ScriptRun(id=run_id, status="queued")
 
     def stop(self, run_id: str) -> ScriptRun:
-        """Cancel a queued execution; active Python code cannot be force-stopped safely."""
+        """Отменить ожидающий запуск; активный Python-код нельзя безопасно остановить принудительно."""
         with self._lock:
             record = self._get_record(run_id)
             future = record.future
@@ -92,17 +93,17 @@ class ScriptRunner:
             return ScriptRun(id=run_id, status=status)
         if status == "running":
             raise RunCannotBeStoppedError(
-                "The script is already running and cannot be safely interrupted. "
-                "It will finish normally."
+                "Скрипт уже выполняется и не может быть безопасно прерван. "
+                "Он завершится штатно."
             )
         if future is not None and future.cancel():
             self._publish(record, "status", status="cancelled")
             return ScriptRun(id=run_id, status="cancelled")
 
-        raise RunCannotBeStoppedError("The script is already starting and cannot be safely interrupted.")
+        raise RunCannotBeStoppedError("Скрипт уже запускается и не может быть безопасно прерван.")
 
     def subscribe(self, run_id: str) -> Tuple[List[Dict[str, Any]], queue.Queue[Dict[str, Any]]]:
-        """Return replayable events and a queue for all future run events."""
+        """Вернуть историю событий и очередь для всех будущих событий запуска."""
         with self._lock:
             record = self._get_record(run_id)
             subscriber: queue.Queue[Dict[str, Any]] = queue.Queue()
@@ -110,21 +111,21 @@ class ScriptRunner:
             return list(record.events), subscriber
 
     def unsubscribe(self, run_id: str, subscriber: queue.Queue[Dict[str, Any]]) -> None:
-        """Remove a WebSocket subscription after disconnect."""
+        """Удалить подписку WebSocket после отключения."""
         with self._lock:
             record = self._runs.get(run_id)
             if record is not None and subscriber in record.subscribers:
                 record.subscribers.remove(subscriber)
 
     def shutdown(self) -> None:
-        """Stop accepting queued work during controlled application shutdown."""
+        """Прекратить принимать новые задачи при штатном завершении приложения."""
         self._executor.shutdown(wait=False, cancel_futures=False)
 
     def _execute(self, record: _RunRecord, script_path: Path, params: Dict[str, Any]) -> None:
         self._publish(record, "status", status="running")
         resolve = self._resolve_bridge.get_resolve()
         if resolve is None:
-            self._publish(record, "log", level="error", message="DaVinci Resolve is unavailable.")
+            self._publish(record, "log", level="error", message="DaVinci Resolve недоступен.")
             self._publish(record, "status", status="error")
             return
 
@@ -134,11 +135,15 @@ class ScriptRunner:
                 module = _load_module(script_path, record.id)
                 run = getattr(module, "run", None)
                 if not callable(run):
-                    raise RuntimeError("The script must define a callable run(resolve, params) function.")
+                    raise RuntimeError("Скрипт должен определять вызываемую функцию run(resolve, params).")
                 result = run(resolve, params)
             stream.flush()
             self._publish(record, "result", result=repr(result)[:2_000])
             self._publish(record, "status", status="success")
+        except (FileNotFoundError, ValueError) as error:
+            stream.flush()
+            self._publish(record, "log", level="error", message=f"Ошибка: {error}")
+            self._publish(record, "status", status="error")
         except Exception:
             stream.flush()
             error = traceback.format_exc()
@@ -166,7 +171,7 @@ class ScriptRunner:
 
 
 class _RunLogStream:
-    """Line-buffered stream used by scripts that call ``print`` during a run."""
+    """Построчно буферизуемый поток для скриптов с вызовами ``print``."""
 
     def __init__(self, publish: Any) -> None:
         self._publish = publish
@@ -187,11 +192,11 @@ class _RunLogStream:
 
 
 def validate_params(script: ScriptDefinition, raw_params: Mapping[str, Any]) -> Dict[str, Any]:
-    """Merge manifest defaults and reject undeclared or incorrectly typed input."""
+    """Объединить значения по умолчанию с вводом и отклонить неизвестные или неверно типизированные параметры."""
     parameter_names = {parameter.name for parameter in script.params}
     unknown_names = set(raw_params).difference(parameter_names)
     if unknown_names:
-        raise ScriptManifestError("unknown parameter(s): %s" % ", ".join(sorted(unknown_names)))
+        raise ScriptManifestError("неизвестные параметры: %s" % ", ".join(sorted(unknown_names)))
 
     params: Dict[str, Any] = {}
     for parameter in script.params:
@@ -219,15 +224,20 @@ def _validate_parameter_value(
         valid = False
 
     if not valid:
-        raise ScriptManifestError("parameter %r has an invalid value" % name)
+        raise ScriptManifestError("параметр %r имеет недопустимое значение" % name)
 
 
 def _load_module(script_path: Path, run_id: str) -> Any:
     module_name = "resolve_panel_script_%s" % run_id
     module_spec = importlib.util.spec_from_file_location(module_name, script_path)
     if module_spec is None or module_spec.loader is None:
-        raise RuntimeError("Unable to load script module.")
+        raise RuntimeError("Не удалось загрузить модуль скрипта.")
 
     module = importlib.util.module_from_spec(module_spec)
-    module_spec.loader.exec_module(module)
+    sys.modules[module_name] = module
+    try:
+        module_spec.loader.exec_module(module)
+    except Exception:
+        sys.modules.pop(module_name, None)
+        raise
     return module

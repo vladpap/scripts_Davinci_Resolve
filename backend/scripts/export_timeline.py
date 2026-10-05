@@ -1,6 +1,6 @@
 """
-name: Export Timeline Metadata
-description: Экспортирует текущую временную шкалу, ее маркеры и видеоклипы в файл JSON.
+name: Экспортировать метаданные таймлинии
+description: Экспортирует текущую временную шкалу, ее маркеры и видеоклипы в файл JSON. Тестовый скрипт.
 params:
   - name: output_path
     type: file
@@ -21,12 +21,12 @@ from typing import Any, Dict, List
 
 
 def run(resolve: Any, params: Dict[str, Any]) -> Dict[str, Any]:
-    """Write selected metadata from the current Resolve timeline as JSON."""
+    """Записать выбранные метаданные текущей таймлинии Resolve в JSON."""
     project_manager = resolve.GetProjectManager()
     project = project_manager.GetCurrentProject() if project_manager else None
     timeline = project.GetCurrentTimeline() if project else None
     if timeline is None:
-        raise RuntimeError("Open a project and select a timeline before running this script.")
+        raise ValueError("Откройте проект и выберите таймлинию перед запуском скрипта.")
 
     export = {
         "project_name": project.GetName(),

@@ -1,1 +1,1 @@
-"""Backend package for the local DaVinci Resolve control panel."""
+"""Пакет backend локальной панели управления DaVinci Resolve."""

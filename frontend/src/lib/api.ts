@@ -1,4 +1,4 @@
-import type { ResolveHealth, ScriptDefinition } from '@/lib/scripts'
+import type { OfflineMedia, ProjectDashboard, ResolveHealth, ScriptDefinition } from '@/lib/scripts'
 
 export interface ScriptRun {
   run_id: string
@@ -20,6 +20,20 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
 
 export function fetchHealth(): Promise<ResolveHealth> {
   return request<ResolveHealth>('/api/health')
+}
+
+export function fetchProjectDashboard(): Promise<ProjectDashboard> {
+  return request<ProjectDashboard>('/api/project-dashboard')
+}
+
+export function fetchOfflineMedia(): Promise<OfflineMedia[]> {
+  return request<OfflineMedia[]>('/api/offline-media')
+}
+
+export function revealOfflineMedia(mediaId: string): Promise<{ revealed: boolean }> {
+  return request<{ revealed: boolean }>(`/api/offline-media/${encodeURIComponent(mediaId)}/reveal`, {
+    method: 'POST',
+  })
 }
 
 export function fetchScripts(): Promise<ScriptDefinition[]> {

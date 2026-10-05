@@ -109,7 +109,7 @@ function ParameterField({ parameter, value, disabled, onChange }: ParameterField
         onChange={(event) => handleTextChange(event, parameter, onChange)}
       />
       {parameter.type === 'file' && (
-        <p className="mt-1.5 text-xs text-muted-foreground">Укажите путь на компьютере, где запущен backend.</p>
+        <p className="mt-1.5 text-xs text-muted-foreground">Укажите путь на компьютере, где запущена серверная часть.</p>
       )}
     </div>
   )

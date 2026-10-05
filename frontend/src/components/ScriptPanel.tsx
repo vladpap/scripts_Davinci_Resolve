@@ -2,6 +2,7 @@ import { CheckCircle2, FileSliders, LoaderCircle, Play, RotateCcw, Square, Trian
 import { useEffect, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
+import { EdlRenameForm } from '@/components/EdlRenameForm'
 import { ParamForm } from '@/components/ParamForm'
 import { runScript, stopRun } from '@/lib/api'
 import type { ParameterValue, ScriptDefinition } from '@/lib/scripts'
@@ -33,6 +34,7 @@ function ScriptPanel({ script }: ScriptPanelProps) {
   const [logs, setLogs] = useState<LogEntry[]>([])
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [isFormReady, setIsFormReady] = useState(script.id !== 'edl_to_clip_name')
   const { toast } = useToast()
   const isActiveRun = runId !== null && (runStatus === 'queued' || runStatus === 'running')
 
@@ -69,6 +71,7 @@ function ScriptPanel({ script }: ScriptPanelProps) {
 
   const resetForm = () => {
     setValues(defaultValues(script))
+    setIsFormReady(script.id !== 'edl_to_clip_name')
     setMessage(null)
     setError(null)
   }
@@ -86,8 +89,8 @@ function ScriptPanel({ script }: ScriptPanelProps) {
       const run = await runScript(script.id, values)
       setRunId(run.run_id)
       setRunStatus(run.status)
-      setMessage(`Скрипт запущен: ${run.run_id.slice(0, 8)}`)
-      toast({ title: 'Скрипт запущен', description: `ID запуска: ${run.run_id.slice(0, 8)}`, variant: 'success' })
+      setMessage(`Скрипт запущен: ${script.name}`)
+      toast({ title: 'Скрипт запущен', description: script.name, variant: 'success' })
     } catch (requestError) {
       const description = requestError instanceof Error ? requestError.message : 'Не удалось запустить скрипт.'
       setError(description)
@@ -136,7 +139,11 @@ function ScriptPanel({ script }: ScriptPanelProps) {
             <FileSliders className="size-4 text-primary" />
             <h2 className="text-sm font-semibold">Параметры</h2>
           </div>
-          <ParamForm disabled={isActiveRun || isSubmitting} params={script.params} values={values} onChange={updateValue} />
+          {script.id === 'edl_to_clip_name' ? (
+            <EdlRenameForm disabled={isActiveRun || isSubmitting} values={values} onChange={updateValue} onReadyChange={setIsFormReady} />
+          ) : (
+            <ParamForm disabled={isActiveRun || isSubmitting} params={script.params} values={values} onChange={updateValue} />
+          )}
         </div>
 
         <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -150,7 +157,7 @@ function ScriptPanel({ script }: ScriptPanelProps) {
               Остановить
             </Button>
           ) : (
-            <Button className="w-full sm:w-auto" size="sm" disabled={isSubmitting} onClick={() => void handleRun()}>
+            <Button className="w-full sm:w-auto" size="sm" disabled={isSubmitting || !isFormReady} onClick={() => void handleRun()}>
               {isSubmitting ? <LoaderCircle className="size-3.5 animate-spin" /> : <Play className="size-3.5" />}
             Запустить
             </Button>

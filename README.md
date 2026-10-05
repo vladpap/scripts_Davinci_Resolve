@@ -1,9 +1,41 @@
-# DaVinci Resolve Control Panel
+# Панель управления DaVinci Resolve
 
-Local web panel for running DaVinci Resolve Python scripts. The server binds to
-`127.0.0.1` only and expects DaVinci Resolve to be running when its API is used.
+[![Лицензия: MIT](https://img.shields.io/badge/Лицензия-MIT-yellow.svg)](LICENSE)
+![Python 3.11](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)
+![Tailwind%20CSS](https://img.shields.io/badge/Tailwind%20CSS-4-06B6D4?logo=tailwindcss&logoColor=white)
+![macOS](https://img.shields.io/badge/macOS-supported-000000?logo=apple&logoColor=white)
 
-## Run
+Локальная веб-панель для запуска Python-скриптов DaVinci Resolve. Сервер
+принимает подключения только на `127.0.0.1` и использует API запущенного
+DaVinci Resolve.
+
+## Быстрый запуск в macOS
+
+В Терминале перейдите в каталог проекта и выполните один раз:
+
+```zsh
+./install.command
+```
+
+Скрипт проверит macOS, установит при необходимости инструменты командной строки
+Xcode, Homebrew, Node.js/npm, `uv` и Python 3.11. Затем он создаст окружение
+Python, установит зависимости серверной части и интерфейса и запустит панель.
+
+Для следующих запусков используйте:
+
+```zsh
+./start.command
+```
+
+`start.command` только проверяет уже установленное окружение и запускает
+backend и frontend. Для остановки панели нажмите `Ctrl+C` в том же окне
+Терминала.
+
+## Запуск серверной части
 
 ```bash
 cd resolve-panel
@@ -13,9 +45,10 @@ python -m pip install -r requirements.txt
 uvicorn backend.main:app --host 127.0.0.1 --port 8765
 ```
 
-Open <http://127.0.0.1:8765/api/health> to inspect the connection status.
+Откройте <http://127.0.0.1:8765/api/health>, чтобы проверить состояние
+подключения к Resolve.
 
-## Frontend development
+## Разработка интерфейса
 
 ```bash
 cd resolve-panel/frontend
@@ -23,16 +56,16 @@ npm install
 npm run dev
 ```
 
-The Vite development server starts the dark React interface. During development,
-requests beginning with `/api` are proxied to the backend at port `8765`.
+Сервер разработки Vite запускает React-интерфейс. Во время разработки запросы,
+начинающиеся с `/api`, проксируются к серверной части на порт `8765`.
 
-## API contract
+## Контракт API
 
 ### `GET /api/health`
 
-Checks the live DaVinci Resolve connection. A failed import, unavailable Resolve
-instance, or stale Resolve connection returns a successful HTTP response with
-`resolve_connected: false`; the next request retries the connection.
+Проверяет текущее подключение к DaVinci Resolve. Ошибка импорта, недоступный
+экземпляр Resolve или устаревшее подключение возвращают успешный HTTP-ответ с
+`resolve_connected: false`; следующий запрос снова попробует подключиться.
 
 ```json
 {
@@ -41,7 +74,7 @@ instance, or stale Resolve connection returns a successful HTTP response with
 }
 ```
 
-When Resolve is unavailable, the response is:
+Когда Resolve недоступен, ответ выглядит так:
 
 ```json
 {
@@ -50,18 +83,36 @@ When Resolve is unavailable, the response is:
 }
 ```
 
+### `GET /api/project-dashboard`
+
+Возвращает сводку по открытому в Resolve проекту. `media_count` включает
+элементы всех папок Media Pool. `missing_clip_count` содержит число клипов с
+исходным абсолютным путём к файлу, которого больше нет на диске.
+
+```json
+{
+  "resolve_connected": true,
+  "project_name": "Рекламный монтаж",
+  "media_count": 248,
+  "timeline_name": "Сборка v4",
+  "timeline_count": 6,
+  "missing_clip_count": 2
+}
+```
+
 ### `GET /api/scripts`
 
-Returns metadata for every valid Python file from `backend/scripts/`. Scripts are
-discovered once at server startup; a restart is needed after adding or editing a
-script. Files are parsed with `ast`, never imported or executed during discovery.
+Возвращает метаданные всех корректных Python-файлов из `backend/scripts/`.
+Скрипты обнаруживаются при запуске сервера, поэтому после добавления или
+изменения скрипта серверную часть нужно перезапустить. При обнаружении файлы разбираются
+через `ast`, но не импортируются и не выполняются.
 
 ```json
 [
   {
     "id": "add_markers",
-    "name": "Add Markers to Timeline",
-    "description": "Adds a marker at the start of every clip on the selected timeline track.",
+    "name": "Добавить маркеры на таймлинию",
+    "description": "Добавляет маркер в начале каждого клипа на выбранной дорожке.",
     "params": [
       {
         "name": "color",
@@ -76,13 +127,14 @@ script. Files are parsed with `ast`, never imported or executed during discovery
 
 ### `GET /api/scripts/{id}`
 
-Returns a single script manifest. Unknown identifiers return `404`.
+Возвращает манифест одного скрипта. Для неизвестного идентификатора возвращается
+`404`.
 
 ### `POST /api/scripts/{id}/run`
 
-Validates form values against the selected script manifest and queues it in a
-dedicated worker thread. Resolve must be connected; otherwise the endpoint returns
-`503`. Unknown values and invalid parameter types return `422`.
+Проверяет значения формы по манифесту выбранного скрипта и ставит выполнение в
+выделенный рабочий поток. Resolve должен быть подключён, иначе конечная точка вернёт
+`503`. Неизвестные значения и неверные типы параметров возвращают `422`.
 
 ```json
 {
@@ -90,12 +142,12 @@ dedicated worker thread. Resolve must be connected; otherwise the endpoint retur
     "track_type": "video",
     "track_index": 1,
     "color": "Blue",
-    "note": "Review"
+    "note": "Проверка"
   }
 }
 ```
 
-Successful requests return `202 Accepted`:
+При успешном принятии запроса возвращается `202 Accepted`:
 
 ```json
 {
@@ -104,54 +156,54 @@ Successful requests return `202 Accepted`:
 }
 ```
 
-The current endpoint confirms that a run was accepted. Run completion, errors,
-stopping, and live logs are provided by the WebSocket endpoint below.
+Эта конечная точка подтверждает только принятие запуска. Завершение, ошибки,
+остановка и поток логов доступны через WebSocket ниже.
 
 ### `POST /api/runs/{run_id}/stop`
 
-Cancels a queued run and returns its final `cancelled` status. Python cannot
-safely kill a synchronous function already executing in another thread, so a run
-that has started returns `409 Conflict` and is allowed to finish normally.
+Отменяет ожидающий запуск и возвращает его итоговый статус `cancelled`. Python
+не может безопасно остановить синхронную функцию, уже выполняющуюся в другом
+потоке, поэтому запущенный скрипт вернёт `409 Conflict` и завершится штатно.
 
 ### `WS /ws/logs/{run_id}`
 
-Streams JSON events for one accepted run: its `queued`, `running`, and terminal
-(`success`, `error`, or `cancelled`) status, standard output captured from the
-script, exceptions, and the result preview. Events produced before the WebSocket
-connects are replayed first.
+Передаёт JSON-события одного принятого запуска: статусы `queued`, `running` и
+итоговые (`success`, `error` или `cancelled`), стандартный вывод скрипта,
+исключения и краткий результат. События, созданные до подключения WebSocket,
+передаются первыми.
 
-## Script manifest
+## Манифест скрипта
 
-Each script is a `.py` file in `backend/scripts/` with a YAML document in its
-module docstring. The filename becomes the API identifier and must use lowercase
-letters, digits, and underscores. Supported parameter types are `text`, `number`,
-`select`, `bool`, `textarea`, and `file`. A `select` parameter must declare a
-non-empty `options` list and use one of those options as its default.
+Каждый файл `.py` в `backend/scripts/` должен содержать YAML-документ в первой
+строке документации модуля. Имя файла становится API-идентификатором и должно состоять из
+строчных латинских букв, цифр и `_`. Поддерживаются типы параметров `text`,
+`number`, `select`, `bool`, `textarea` и `file`. Параметр `select` должен
+задавать непустой список `options`, а его `default` должен быть одним из них.
 
 ```python
 """
-name: Example Script
-description: A short description for the control panel.
+name: Пример скрипта
+description: Краткое описание скрипта для панели.
 params:
   - name: note
     type: text
-    default: Hello
+    default: Привет
 """
 
 def run(resolve, params):
     pass
 ```
 
-## Project layout
+## Структура проекта
 
 ```text
 backend/
-  main.py            # FastAPI application and endpoints
-  resolve_bridge.py  # thin synchronous DaVinci Resolve API adapter
-  script_loader.py   # manifest parsing and script registry
-  runner.py          # validated background script execution
-  scripts/           # user scripts and their YAML docstring manifests
+  main.py            # FastAPI-приложение и конечные точки API
+  resolve_bridge.py  # синхронный адаптер API DaVinci Resolve
+  script_loader.py   # разбор манифестов и реестр скриптов
+  runner.py          # проверенное фоновое выполнение скриптов
+  scripts/           # пользовательские скрипты и их YAML-манифесты
 frontend/
-  src/components/ui/ # local shadcn/ui component foundation
-  src/lib/           # shared frontend utilities
+  src/components/ui/ # локальная основа компонентов shadcn/ui
+  src/lib/           # общие утилиты интерфейса
 ```
